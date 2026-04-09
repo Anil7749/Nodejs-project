@@ -19,7 +19,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       # 🐳 Login to ECR
       - name: Login to Amazon ECR
@@ -30,7 +30,6 @@ jobs:
         run: |
           docker build -t ${{ secrets.ECR_BACKEND }} ./backend
           docker tag ${{ secrets.ECR_BACKEND }}:latest 533267129063.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.ECR_BACKEND }}:latest
-
       # 📤 Push Backend
       - name: Push Backend Image
         run: |
