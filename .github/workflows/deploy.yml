@@ -1,0 +1,64 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 🔐 Configure AWS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          region: ${{ secrets.AWS_REGION }}
+
+      # 🐳 Login to ECR
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # 🔨 Build Backend Image
+      - name: Build Backend Docker Image
+        run: |
+          docker build -t ${{ secrets.ECR_BACKEND }} ./backend
+          docker tag ${{ secrets.ECR_BACKEND }}:latest 533267129063.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.ECR_BACKEND }}:latest
+
+      # 📤 Push Backend
+      - name: Push Backend Image
+        run: |
+          docker push 533267129063.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.ECR_BACKEND }}:latest
+
+      # 🔨 Build Frontend Image
+      - name: Build Frontend Docker Image
+        run: |
+          docker build -t ${{ secrets.ECR_FRONTEND }} ./frontend
+          docker tag ${{ secrets.ECR_FRONTEND }}:latest 533267129063.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.ECR_FRONTEND }}:latest
+
+      # 📤 Push Frontend
+      - name: Push Frontend Image
+        run: |
+          docker push 533267129063.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.ECR_FRONTEND }}:latest
+
+      # 🚀 Deploy Backend
+      - name: Deploy Backend Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --service ${{ secrets.ECS_BACKEND_SERVICE }} \
+            --force-new-deployment
+
+      # 🚀 Deploy Frontend
+      - name: Deploy Frontend Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --service ${{ secrets.ECS_FRONTEND_SERVICE }} \
+            --force-new-deployment
